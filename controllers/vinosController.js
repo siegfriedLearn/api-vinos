@@ -139,7 +139,103 @@ const vinosController = {
       console.error(error);
       res.status(500).json({ message: 'Error al obtener vinos por puntuación' });
     }
+  },
+
+  // Endpoint 4: Vinos por tipo
+  getVinosPorTipo: async (req, res) => {
+    try {
+      const { tipo } = req.params;
+      
+      const query = `
+        SELECT 
+          v.vino_id,
+          v.nombre AS vino,
+          b.nombre AS bodega,
+          p.nombre AS pais,
+          v.anio_produccion,
+          v.porcentaje_alcohol,
+          STRING_AGG(DISTINCT c.nombre, ', ') AS cepas
+        FROM 
+          vinos.vinos v
+        JOIN 
+          vinos.bodegas b ON v.bodega_id = b.bodega_id
+        JOIN 
+          vinos.paises p ON b.pais_id = p.pais_id
+        JOIN 
+          vinos.tipos_vino tv ON v.tipo_id = tv.tipo_id
+        LEFT JOIN 
+          vinos.composicion comp ON v.vino_id = comp.vino_id
+        LEFT JOIN 
+          vinos.cepas c ON comp.cepa_id = c.cepa_id
+        WHERE 
+          LOWER(tv.nombre) = LOWER($1)
+        GROUP BY 
+          v.vino_id, v.nombre, b.nombre, p.nombre, v.anio_produccion, v.porcentaje_alcohol
+        ORDER BY 
+          v.nombre
+      `;
+      
+      const result = await pool.query(query, [tipo]);
+      
+      res.json({
+        tipo: tipo,
+        cantidad: result.rowCount,
+        vinos: result.rows
+      });
+      
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Error al obtener vinos por tipo' });
+    }
+  },
+
+// Endpoint 5: Vinos por .cepa
+  getVinosPorCepa: async (req, res) => {
+    try {
+      const { cepa } = req.params;
+      
+      const query = `
+        SELECT 
+          v.vino_id,
+          v.nombre AS vino,
+          b.nombre AS bodega,
+          p.nombre AS pais,
+          v.anio_produccion,
+          v.porcentaje_alcohol,
+          tv.nombre AS tipo_vino,
+          comp.porcentaje AS porcentaje_cepa
+        FROM 
+          vinos.vinos v
+        JOIN 
+          vinos.bodegas b ON v.bodega_id = b.bodega_id
+        JOIN 
+          vinos.paises p ON b.pais_id = p.pais_id
+        JOIN 
+          vinos.tipos_vino tv ON v.tipo_id = tv.tipo_id
+        JOIN 
+          vinos.composicion comp ON v.vino_id = comp.vino_id
+        JOIN 
+          vinos.cepas c ON comp.cepa_id = c.cepa_id
+        WHERE 
+          LOWER(c.nombre) = LOWER($1)
+        ORDER BY 
+          comp.porcentaje DESC, v.nombre
+      `;
+      
+      const result = await pool.query(query, [cepa]);
+      
+      res.json({
+        cepa: cepa,
+        cantidad: result.rowCount,
+        vinos: result.rows
+      });
+      
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Error al obtener vinos por cepa' });
+    }
   }
+
 };
 
 module.exports = vinosController;

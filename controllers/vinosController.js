@@ -80,7 +80,6 @@ const vinosController = {
           vinos.precios pr ON v.vino_id = pr.vino_id
         WHERE 
           pr.precio >= $1
-          AND pr.anio = EXTRACT(YEAR FROM CURRENT_DATE)
         ORDER BY 
           pr.precio DESC
       `;
